@@ -2,7 +2,7 @@ interface ConnectionDBEntry {
   connectionId: string;
   sourceIp: string;
   connectedAt: number;
-  siteUrl: string,
+  siteId: string,
 }
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
 
 interface MessageDBEntry extends Message {
   sourceIp: string;
-  siteUrl: string;
+  siteId: string;
 }
 
 export { ConnectionDBEntry, Message, MessageDBEntry };

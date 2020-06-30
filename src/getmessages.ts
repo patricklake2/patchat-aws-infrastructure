@@ -5,12 +5,12 @@ import { Message } from './types';
 export async function handler(event) {
   const { connectionId, domainName, stage } = event.requestContext;
   const body = JSON.parse(event.body);
-  const { siteUrl } = body;
+  const { siteId } = body;
 
   const messageQueryParams = {
-    KeyConditionExpression: 'siteUrl = :url',
+    KeyConditionExpression: 'siteId = :id',
     ExpressionAttributeValues: {
-      ':url': siteUrl,
+      ':id': siteId,
     },
   };
   const previousMessages: Message[] = await queryTable(

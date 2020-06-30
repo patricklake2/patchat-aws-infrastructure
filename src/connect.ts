@@ -5,7 +5,7 @@ import { ConnectionDBEntry } from './types';
 export async function handler(event) {
   const {
     headers: { origin },
-    queryStringParameters: { siteUrl },
+    queryStringParameters: { siteId },
     requestContext: {
       connectionId,
       connectedAt,
@@ -24,7 +24,7 @@ export async function handler(event) {
     connectionId,
     sourceIp,
     connectedAt,
-    siteUrl,
+    siteId,
   };
 
   try {

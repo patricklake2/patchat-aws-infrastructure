@@ -19,6 +19,13 @@ provider:
         - Fn::GetAtt:
             - ConnectionsTable
             - Arn
+        - Fn::Join:
+            - /
+            -
+              - Fn::GetAtt:
+                  - ConnectionsTable
+                  - Arn
+              - index/*
         - Fn::GetAtt:
             - MessagesTable
             - Arn
@@ -73,27 +80,32 @@ resources:
       Properties:
         TableName: ${self:custom.tableNames.connections}
         AttributeDefinitions:
-          - AttributeName: siteUrl
-            AttributeType: S
           - AttributeName: connectionId
+            AttributeType: S
+          - AttributeName: siteId
             AttributeType: S
         KeySchema:
-          - AttributeName: siteUrl
-            KeyType: HASH
           - AttributeName: connectionId
-            KeyType: RANGE
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: siteIndex
+            KeySchema:
+              - AttributeName: siteId
+                KeyType: HASH
+            Projection:
+              ProjectionType: KEYS_ONLY
         BillingMode: PAY_PER_REQUEST
     MessagesTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:custom.tableNames.messages}
         AttributeDefinitions:
-          - AttributeName: siteUrl
+          - AttributeName: siteId
             AttributeType: S
           - AttributeName: msgTimestamp
             AttributeType: N
         KeySchema:
-          - AttributeName: siteUrl
+          - AttributeName: siteId
             KeyType: HASH
           - AttributeName: msgTimestamp
             KeyType: RANGE

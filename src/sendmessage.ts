@@ -11,29 +11,34 @@ export async function handler(event) {
   } = event.requestContext;
   console.dir(event);
   const body = JSON.parse(event.body);
-  const { siteUrl } = event.body;
+  const { siteId } = body;
   const message: Message = {
     ...body.message,
     msgTimestamp: Date.now(),
   };
   if (!message.threadId)
     message.threadId = createHash(sourceIp + message.msgTimestamp);
-  
+
   const dbEntry: MessageDBEntry = {
     ...message,
     sourceIp,
-    siteUrl,
-  }
+    siteId,
+  };
 
   const connectionQuery = {
-    KeyConditionExpression: 'siteUrl = :url',
+    IndexName: 'siteIndex',
+    KeyConditionExpression: 'siteId = :id',
     ExpressionAttributeValues: {
-      ':url': siteUrl,
+      ':id': siteId,
     },
-  }
+  };
 
-  const connections = await queryTable(process.env.MSG_TABLE, ['connectionId'], connectionQuery)
-  const connectionIds = connections.map(({ connectionId }) => connectionId )
+  const connections = await queryTable(
+    process.env.CONN_TABLE,
+    ['connectionId'],
+    connectionQuery
+  );
+  const connectionIds = connections.map(({ connectionId }) => connectionId);
   const apiEndpoint = `${domainName}/${stage}`;
 
   try {
@@ -41,7 +46,7 @@ export async function handler(event) {
       postToConnections(apiEndpoint, connectionIds, [message]),
       putItem(process.env.MSG_TABLE, dbEntry),
     ]);
-  } catch(e) {
+  } catch (e) {
     return { statusCode: 500, body: JSON.stringify(e) };
   }
 
