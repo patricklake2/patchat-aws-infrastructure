@@ -1,0 +1,100 @@
+service:
+  name: patchat
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  websocketsApiName: patchat-api
+  websocketsApiRouteSelectionExpression: $request.body.action
+  stage: ${opt:stage, 'dev'}
+  region: eu-west-2
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+        - dynamodb:Query
+      Resource:
+        - Fn::GetAtt:
+            - ConnectionsTable
+            - Arn
+        - Fn::GetAtt:
+            - MessagesTable
+            - Arn
+  environment:
+    CONN_TABLE: ${self:custom.tableNames.connections}
+    MSG_TABLE: ${self:custom.tableNames.messages}
+
+package:
+  individually: true
+
+custom:
+  tableNames:
+    connections: patchat-connections
+    messages: patchat-messages
+
+functions:
+  ConnectHandler:
+    handler: connect.handler
+    memorySize: 128
+    events:
+      - websocket: $connect
+    package:
+      artifact: dist/packages/connect.zip
+  DisconnectHandler:
+    handler: disconnect.handler
+    memorySize: 128
+    events:
+      - websocket: $disconnect
+    package:
+      artifact: dist/packages/disconnect.zip
+  MessageHandler:
+    handler: sendmessage.handler
+    memorySize: 128
+    events:
+      - websocket:
+          route: sendmessage
+    package:
+      artifact: dist/packages/sendmessage.zip
+  GetMessagesHandler:
+    handler: getmessages.handler
+    memorySize: 128
+    events:
+      - websocket:
+          route: getmessages
+    package:
+      artifact: dist/packages/getmessages.zip
+
+resources:
+  Resources:
+    ConnectionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableNames.connections}
+        AttributeDefinitions:
+          - AttributeName: siteUrl
+            AttributeType: S
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: siteUrl
+            KeyType: HASH
+          - AttributeName: connectionId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+    MessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableNames.messages}
+        AttributeDefinitions:
+          - AttributeName: siteUrl
+            AttributeType: S
+          - AttributeName: msgTimestamp
+            AttributeType: N
+        KeySchema:
+          - AttributeName: siteUrl
+            KeyType: HASH
+          - AttributeName: msgTimestamp
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST

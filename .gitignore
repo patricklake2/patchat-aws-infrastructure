@@ -1,0 +1,10 @@
+*.iml
+.idea/
+.aws-sam/
+packaged.yaml
+node_modules/
+.serverless/
+.DS_Store
+old
+dist/
+src2

@@ -1,0 +1,36 @@
+{
+  "name": "websockets-chat-server",
+  "version": "1.0.0",
+  "scripts": {
+    "bundle": "gulp bundle",
+    "package": "gulp package",
+    "deploy": "gulp && serverless deploy"
+  },
+  "author": "Patrick Lake",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.10.2",
+    "@rollup/plugin-commonjs": "^13.0.0",
+    "@rollup/plugin-node-resolve": "^8.0.1",
+    "@rollup/plugin-typescript": "^4.1.2",
+    "@types/aws-lambda": "^8.10.56",
+    "@types/node": "^14.0.13",
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
+    "builtin-modules": "^3.1.0",
+    "eslint": "^7.2.0",
+    "gulp": "^4.0.2",
+    "gulp-zip": "^5.0.1",
+    "rollup": "^2.16.1",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "serverless-gulp": "^1.0.10",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.698.0",
+    "tslib": "^2.0.0"
+  }
+}
