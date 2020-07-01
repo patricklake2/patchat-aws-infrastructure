@@ -8,30 +8,12 @@ provider:
   websocketsApiRouteSelectionExpression: $request.body.action
   stage: ${opt:stage, 'dev'}
   region: eu-west-2
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:Scan
-        - dynamodb:Query
-      Resource:
-        - Fn::GetAtt:
-            - ConnectionsTable
-            - Arn
-        - Fn::Join:
-            - /
-            -
-              - Fn::GetAtt:
-                  - ConnectionsTable
-                  - Arn
-              - index/*
-        - Fn::GetAtt:
-            - MessagesTable
-            - Arn
   environment:
     CONN_TABLE: ${self:custom.tableNames.connections}
     MSG_TABLE: ${self:custom.tableNames.messages}
+
+plugins:
+  - serverless-iam-roles-per-function
 
 package:
   individually: true
@@ -49,6 +31,19 @@ functions:
       - websocket: $connect
     package:
       artifact: dist/packages/connect.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource:
+          - arn:aws:execute-api:*:*:*/@connections/*
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - Fn::GetAtt:
+              - ConnectionsTable
+              - Arn
   DisconnectHandler:
     handler: disconnect.handler
     memorySize: 128
@@ -56,6 +51,19 @@ functions:
       - websocket: $disconnect
     package:
       artifact: dist/packages/disconnect.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource:
+          - arn:aws:execute-api:*:*:*/@connections/*
+      - Effect: Allow
+        Action: 
+          - dynamodb:DeleteItem
+        Resource:
+          - Fn::GetAtt:
+              - ConnectionsTable
+              - Arn
   MessageHandler:
     handler: sendmessage.handler
     memorySize: 128
@@ -64,6 +72,34 @@ functions:
           route: sendmessage
     package:
       artifact: dist/packages/sendmessage.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource:
+          - arn:aws:execute-api:*:*:*/@connections/*
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - Fn::GetAtt:
+              - MessagesTable
+              - Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource:
+          - Fn::GetAtt:
+              - ConnectionsTable
+              - Arn
+          - Fn::Join:
+              - /
+              - 
+                - Fn::GetAtt:
+                    - ConnectionsTable
+                    - Arn
+                - index/*
   GetMessagesHandler:
     handler: getmessages.handler
     memorySize: 128
@@ -72,6 +108,26 @@ functions:
           route: getmessages
     package:
       artifact: dist/packages/getmessages.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource:
+          - arn:aws:execute-api:*:*:*/@connections/*
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - Fn::GetAtt:
+              - MessagesTable
+              - Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource:
+          - Fn::GetAtt:
+              - ConnectionsTable
+              - Arn
 
 resources:
   Resources:

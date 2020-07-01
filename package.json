@@ -1,5 +1,5 @@
 {
-  "name": "websockets-chat-server",
+  "name": "patchat-backend",
   "version": "1.0.0",
   "scripts": {
     "bundle": "gulp bundle",
@@ -26,6 +26,7 @@
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "serverless-gulp": "^1.0.10",
+    "serverless-iam-roles-per-function": "^2.0.2",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5"
   },
