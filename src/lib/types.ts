@@ -2,7 +2,7 @@ interface ConnectionDBEntry {
   connectionId: string;
   sourceIp: string;
   connectedAt: number;
-  siteId: string,
+  siteId: string;
 }
 
 interface Message {
@@ -10,6 +10,8 @@ interface Message {
   msgTimestamp: number;
   displayName: string;
   content: string;
+  flags: string[];
+  userId: string;
 }
 
 interface MessageDBEntry extends Message {

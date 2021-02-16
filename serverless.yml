@@ -9,8 +9,19 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: eu-west-2
   environment:
-    CONN_TABLE: ${self:custom.tableNames.connections}
-    MSG_TABLE: ${self:custom.tableNames.messages}
+    CONN_TABLE: !Ref ConnectionsTable
+    MSG_TABLE: !Ref MessagesTable
+    BLOCKED_TABLE: !Ref BlockedUsersTable
+    API_ENDPOINT:
+      Fn::Join:
+        - ''
+        - 
+          - !Ref WebsocketsApi
+          - '.execute-api.'
+          - ${self:provider.region}
+          - '.amazonaws.com'
+          - '/'
+          - ${opt:stage, self:provider.stage}
 
 plugins:
   - serverless-iam-roles-per-function
@@ -19,9 +30,10 @@ package:
   individually: true
 
 custom:
-  tableNames:
-    connections: patchat-connections
-    messages: patchat-messages
+  ConnectionsTableArn: { "Fn::GetAtt": ["ConnectionsTable", "Arn"] }
+  ConnectionsTableIndexArn: { "Fn::Join": [ "/", [ { "Fn::GetAtt": ["ConnectionsTable", "Arn"] }, "index", "*" ] ] }
+  MessagesTableArn: { "Fn::GetAtt": ["MessagesTable", "Arn"] }
+  BlockedUsersTableArn: { "Fn::GetAtt": ["BlockedUsersTable", "Arn"] }
 
 functions:
   ConnectHandler:
@@ -41,9 +53,7 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource:
-          - Fn::GetAtt:
-              - ConnectionsTable
-              - Arn
+          - ${self:custom.ConnectionsTableArn}
   DisconnectHandler:
     handler: disconnect.handler
     memorySize: 128
@@ -61,17 +71,15 @@ functions:
         Action: 
           - dynamodb:DeleteItem
         Resource:
-          - Fn::GetAtt:
-              - ConnectionsTable
-              - Arn
+          - ${self:custom.ConnectionsTableArn}
   MessageHandler:
-    handler: sendmessage.handler
+    handler: sendMessage.handler
     memorySize: 128
     events:
       - websocket:
           route: sendmessage
     package:
-      artifact: dist/packages/sendmessage.zip
+      artifact: dist/packages/sendMessage.zip
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -82,32 +90,27 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource:
-          - Fn::GetAtt:
-              - MessagesTable
-              - Arn
+          - ${self:custom.MessagesTableArn}
       - Effect: Allow
         Action:
           - dynamodb:Query
           - dynamodb:DeleteItem
         Resource:
-          - Fn::GetAtt:
-              - ConnectionsTable
-              - Arn
-          - Fn::Join:
-              - /
-              - 
-                - Fn::GetAtt:
-                    - ConnectionsTable
-                    - Arn
-                - index/*
+          - ${self:custom.ConnectionsTableArn}
+          - ${self:custom.ConnectionsTableIndexArn}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - ${self:custom.BlockedUsersTableArn}
   GetMessagesHandler:
-    handler: getmessages.handler
+    handler: getMessages.handler
     memorySize: 128
     events:
       - websocket:
           route: getmessages
     package:
-      artifact: dist/packages/getmessages.zip
+      artifact: dist/packages/getMessages.zip
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -118,23 +121,53 @@ functions:
         Action:
           - dynamodb:Query
         Resource:
-          - Fn::GetAtt:
-              - MessagesTable
-              - Arn
+          - ${self:custom.MessagesTableArn}
       - Effect: Allow
         Action:
           - dynamodb:DeleteItem
         Resource:
-          - Fn::GetAtt:
-              - ConnectionsTable
-              - Arn
+          - ${self:custom.ConnectionsTableArn}
+  DeleteMessageHandler:
+    handler: deleteMessage.handler
+    memorySize: 128
+    package:
+      artifact: dist/packages/deleteMessage.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource:
+          - arn:aws:execute-api:*:*:*/@connections/*
+      - Effect: Allow
+        Action: 
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource:
+          - ${self:custom.ConnectionsTableArn}
+          - ${self:custom.ConnectionsTableIndexArn}
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource:
+          - ${self:custom.MessagesTableArn}
+  ManageBlockedUsersHandler:
+    handler: manageBlockedUsers.handler
+    memorySize: 128
+    package:
+      artifact: dist/packages/manageBlockedUsers.zip
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:DeleteItem
+        Resource:
+          - ${self:custom.BlockedUsersTableArn}
 
 resources:
   Resources:
     ConnectionsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.tableNames.connections}
         AttributeDefinitions:
           - AttributeName: connectionId
             AttributeType: S
@@ -154,7 +187,6 @@ resources:
     MessagesTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.tableNames.messages}
         AttributeDefinitions:
           - AttributeName: siteId
             AttributeType: S
@@ -165,4 +197,14 @@ resources:
             KeyType: HASH
           - AttributeName: msgTimestamp
             KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+    BlockedUsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
         BillingMode: PAY_PER_REQUEST

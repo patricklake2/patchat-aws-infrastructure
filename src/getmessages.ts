@@ -1,9 +1,9 @@
 import { queryTable } from './lib/dynamoDB';
 import { postToConnections } from './lib/apiGateway';
-import { Message } from './types';
+import { Message } from './lib/types';
 
 export async function handler(event) {
-  const { connectionId, domainName, stage } = event.requestContext;
+  const { connectionId } = event.requestContext;
   const body = JSON.parse(event.body);
   const { siteId } = body;
 
@@ -15,12 +15,15 @@ export async function handler(event) {
   };
   const previousMessages: Message[] = await queryTable(
     process.env.MSG_TABLE,
-    ['threadId', 'msgTimestamp', 'content', 'displayName'],
+    ['threadId', 'msgTimestamp', 'content', 'displayName', 'flags', 'userId'],
     messageQueryParams
   );
-  const endpoint = `${domainName}/${stage}`;
+  const postData = {
+    action: 'send',
+    messages: previousMessages,
+  };
   if (previousMessages.length > 0) {
-    await postToConnections(endpoint, [connectionId], previousMessages);
+    await postToConnections([connectionId], postData);
   }
   return { statusCode: 200, body: 'Messages sent.' };
 }

@@ -1,6 +1,6 @@
 import { parse } from 'url';
 import { putItem } from './lib/dynamoDB';
-import { ConnectionDBEntry } from './types';
+import { ConnectionDBEntry } from './lib/types';
 
 export async function handler(event) {
   const {

@@ -9,6 +9,7 @@ exports.buildConfig = {
     ...builtins,
     'aws-sdk/clients/dynamodb',
     'aws-sdk/clients/apigatewaymanagementapi',
+    'aws-sdk/clients/s3'
   ],
   plugins: [
     resolve({

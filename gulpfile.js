@@ -1,12 +1,18 @@
 const { src, dest, series, parallel } = require('gulp');
 const { buildConfig } = require('./rollup.config.js');
 const rollup = require('rollup');
-const serverless = require('serverless-gulp');
 const zip = require('gulp-zip');
 
-const packages = ['connect', 'disconnect', 'sendmessage', 'getmessages'];
+const functions = [
+  'connect',
+  'disconnect',
+  'getMessages',
+  'sendMessage',
+  'deleteMessage',
+  'manageBlockedUsers',
+];
 
-const bundleTasks = packages.map((entryPoint) => {
+const bundleTasks = functions.map((entryPoint) => {
   return async () => {
     const bundle = await rollup.rollup({
       input: `src/${entryPoint}.ts`,
@@ -19,7 +25,7 @@ const bundleTasks = packages.map((entryPoint) => {
   };
 });
 
-const zipTasks = packages.map((entryPoint) => {
+const zipTasks = functions.map((entryPoint) => {
   return () =>
     src(`dist/${entryPoint}.js`)
       .pipe(zip(`${entryPoint}.zip`))
